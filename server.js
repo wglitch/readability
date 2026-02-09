@@ -8,10 +8,19 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-app.post("/analyze", async (req, res) => {
-  const text = req.body.text || "";
+app.get("/", (req, res) => {
+  res.send("OK");
+});
 
-  const prompt = `
+app.post("/analyze", async (req, res) => {
+  try {
+    const text = req.body?.text || "";
+
+    if (!text) {
+      return res.send("No text received");
+    }
+
+    const prompt = `
 Beräkna LIX och uppskatta lyssnarnivå.
 Svara mycket kort i JSON:
 { lix: number, level: string, note: string }
@@ -20,17 +29,18 @@ Text:
 ${text}
 `;
 
-  const r = await client.responses.create({
-    model: "gpt-5.2",
-    input: prompt
-  });
+    const r = await client.responses.create({
+      model: "gpt-4.1-mini",
+      input: prompt
+    });
 
-  res.send(r.output_text);
+    res.send(r.output_text || "No output");
+  } catch (err) {
+    console.log("ERROR:", err);
+    res.status(500).send("SERVER ERROR: " + err.message);
+  }
 });
 
-app.get("/", (req, res) => {
-  res.send("OK");
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server running");
 });
-
-app.listen(process.env.PORT || 3000);
-
